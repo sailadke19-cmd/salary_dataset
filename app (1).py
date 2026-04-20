@@ -4,7 +4,7 @@ import pickle
 
 # Load the trained model
 # Make sure 'linear_regression_model.pkl' is in the same directory as app.py or provide the correct path
-with open('/content/random_forest_regressor_model_smaller.pkl', 'rb') as file:
+with open('random_forest_regressor_model_smaller.pkl', 'rb') as file:
     model = pickle.load(file)
 
 st.title('Salary Prediction App')
