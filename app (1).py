@@ -18,6 +18,20 @@ if st.checkbox("Show files in directory"):
     st.write(os.listdir())
 
 # -------------------------------
+# Load Dataset (NEW)
+# -------------------------------
+@st.cache_data
+def load_data():
+    try:
+        df = pd.read_csv("Salary_Dataset_DataScienceLovers.csv")
+        return df
+    except Exception as e:
+        st.error(f"❌ CSV loading failed: {e}")
+        return None
+
+df = load_data()
+
+# -------------------------------
 # Load Model
 # -------------------------------
 @st.cache_resource
@@ -32,26 +46,29 @@ def load_model():
 model = load_model()
 
 # -------------------------------
+# Dynamic Lists from CSV (NEW)
+# -------------------------------
+if df is not None:
+    company_list = sorted(df["Company Name"].dropna().unique())
+    job_title_list = sorted(df["Job Title"].dropna().unique())
+    location_list = sorted(df["Location"].dropna().unique())
+else:
+    company_list = []
+    job_title_list = []
+    location_list = []
+
+# -------------------------------
 # Input Fields
 # -------------------------------
 rating = st.slider("⭐ Rating", 0.0, 5.0, 3.5, 0.1)
 
-company_name = st.selectbox(
-    "🏢 Company Name",
-    ["TCS", "Infosys", "Wipro", "Google", "Amazon"]
-)
+company_name = st.selectbox("🏢 Company Name", company_list)
 
-job_title = st.selectbox(
-    "💻 Job Title",
-    ["Data Scientist", "Software Engineer", "Analyst", "ML Engineer"]
-)
+job_title = st.selectbox("💻 Job Title", job_title_list)
 
 salaries_reported = st.number_input("📊 Salaries Reported", min_value=1, value=5)
 
-location = st.selectbox(
-    "📍 Location",
-    ["Mumbai", "Bangalore", "Delhi", "Hyderabad"]
-)
+location = st.selectbox("📍 Location", location_list)
 
 employment_status = st.selectbox(
     "📄 Employment Status",
@@ -64,17 +81,24 @@ job_roles = st.selectbox(
 )
 
 # -------------------------------
-# Simple Encoding (MUST match training)
+# Encoding using dataset mapping (NEW)
 # -------------------------------
+company_map = {name: idx for idx, name in enumerate(company_list)}
+job_title_map = {name: idx for idx, name in enumerate(job_title_list)}
+location_map = {name: idx for idx, name in enumerate(location_list)}
+
+employment_map = {"Full-time": 0, "Part-time": 1, "Intern": 2}
+job_roles_map = {"Backend": 0, "Frontend": 1, "Data": 2, "AI": 3}
+
 def encode_inputs():
     return {
         "Rating": rating,
-        "Company Name": hash(company_name) % 1000,
-        "Job Title": hash(job_title) % 1000,
+        "Company Name": company_map.get(company_name, 0),
+        "Job Title": job_title_map.get(job_title, 0),
         "Salaries Reported": salaries_reported,
-        "Location": hash(location) % 100,
-        "Employment Status": hash(employment_status) % 10,
-        "Job Roles": hash(job_roles) % 10,
+        "Location": location_map.get(location, 0),
+        "Employment Status": employment_map.get(employment_status, 0),
+        "Job Roles": job_roles_map.get(job_roles, 0),
     }
 
 # -------------------------------
@@ -87,7 +111,6 @@ if st.button("🔮 Predict Salary"):
     else:
         try:
             input_dict = encode_inputs()
-
             input_df = pd.DataFrame([input_dict])
 
             prediction = model.predict(input_df)[0]
