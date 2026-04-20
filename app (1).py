@@ -23,7 +23,7 @@ if st.checkbox("Show files in directory"):
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load("model.pkl")
+        model = joblib.load("random_forest_regressor_model_smaller.pkl")
         return model
     except Exception as e:
         st.error(f"❌ Model loading failed: {e}")
