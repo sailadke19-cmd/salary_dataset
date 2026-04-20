@@ -12,24 +12,29 @@ st.title("💼 Salary Prediction App")
 st.write("Enter details below to predict salary")
 
 # -------------------------------
-# Debug: Check files
+# Debug: Show files
 # -------------------------------
-if st.checkbox("Show files in directory"):
+if st.checkbox("📂 Show files in directory"):
     st.write(os.listdir())
 
 # -------------------------------
-# Load Dataset (NEW)
+# Load Dataset (AUTO + UPLOAD)
 # -------------------------------
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("Salary_Dataset_DataScienceLovers.csv")
-        return df
-    except Exception as e:
-        st.error(f"❌ CSV loading failed: {e}")
+        return pd.read_csv("Salary_Dataset_DataScienceLovers.csv")
+    except:
         return None
 
 df = load_data()
+
+# Upload option (fallback)
+uploaded_file = st.file_uploader("📤 Upload CSV file", type=["csv"])
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success("✅ CSV uploaded successfully!")
 
 # -------------------------------
 # Load Model
@@ -37,8 +42,7 @@ df = load_data()
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load("random_forest_regressor_model_smaller.pkl")
-        return model
+        return joblib.load("random_forest_regressor_model_smaller.pkl")
     except Exception as e:
         st.error(f"❌ Model loading failed: {e}")
         return None
@@ -46,16 +50,20 @@ def load_model():
 model = load_model()
 
 # -------------------------------
-# Dynamic Lists from CSV (NEW)
+# Prepare Dropdown Data
 # -------------------------------
 if df is not None:
-    company_list = sorted(df["Company Name"].dropna().unique())
-    job_title_list = sorted(df["Job Title"].dropna().unique())
-    location_list = sorted(df["Location"].dropna().unique())
+    try:
+        company_list = sorted(df["Company Name"].dropna().unique())
+        job_title_list = sorted(df["Job Title"].dropna().unique())
+        location_list = sorted(df["Location"].dropna().unique())
+    except Exception as e:
+        st.error(f"Column error: {e}")
+        st.write("Available columns:", df.columns)
+        company_list, job_title_list, location_list = [], [], []
 else:
-    company_list = []
-    job_title_list = []
-    location_list = []
+    st.warning("⚠️ No dataset found. Please upload CSV.")
+    company_list, job_title_list, location_list = [], [], []
 
 # -------------------------------
 # Input Fields
@@ -81,7 +89,7 @@ job_roles = st.selectbox(
 )
 
 # -------------------------------
-# Encoding using dataset mapping (NEW)
+# Encoding (MATCH DATASET)
 # -------------------------------
 company_map = {name: idx for idx, name in enumerate(company_list)}
 job_title_map = {name: idx for idx, name in enumerate(job_title_list)}
@@ -107,7 +115,9 @@ def encode_inputs():
 if st.button("🔮 Predict Salary"):
 
     if model is None:
-        st.error("Model not loaded. Check model.pkl")
+        st.error("❌ Model not loaded. Check .pkl file")
+    elif df is None:
+        st.error("❌ Dataset not loaded")
     else:
         try:
             input_dict = encode_inputs()
@@ -118,4 +128,4 @@ if st.button("🔮 Predict Salary"):
             st.success(f"💰 Predicted Salary: ₹{prediction:,.2f}")
 
         except Exception as e:
-            st.error(f"Prediction error: {e}")
+            st.error(f"❌ Prediction error: {e}")
